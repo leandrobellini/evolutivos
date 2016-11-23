@@ -1,135 +1,181 @@
+/*   
+* Este programa implementa o algoritmo de Dijkstra para o problema do 
+* caminho de custo minimo em grafos dirigidos com custos positivos nas
+* arestas.
+*/
+
 #include <stdio.h>
-#include <stdbool.h>
-#include <limits.h>
+#include <stdlib.h>
+#include <math.h>
+#include <string.h>
 
-#define DIJ_MAX_PATHS 10
-#define INFINITY 10000
 
-typedef struct st_node node_t;
-typedef struct st_path path_t;
+int destino, origem, vertices = 0;
+int custo, *custos = NULL; 
+FILE *f;
 
-typedef struct st_path {
-	node_t * node;
-	int distance;
-	bool best;
-} path_t;
+void dijkstra(int vertices,int origem,int destino,int *custos)
+{
+	//printf("chamou o dijkstra!!!\n");
+	int i,v, cont = 0;
+	int *ant, *tmp;  
+	int *z;     /* vertices para os quais se conhece o caminho minimo */
+	double min;
+	double dist[vertices]; /* vetor com os custos dos caminhos */
 
-typedef struct st_node {
-	int distance;
-	char name[10];
-	path_t paths[DIJ_MAX_PATHS];
-	bool visited;
-} node_t;
 
-void add_path_once( node_t * a, node_t * b, int distance ) {
-	path_t * path = a->paths;
-	while( path->node )
-		path++;
-	path->node = b;
-	path->distance = distance;
-}
-
-void add_path( node_t * a, node_t * b, int distance ) {
-	add_path_once( a, b, distance );
-	add_path_once( b, a, distance );
-}
-
-void node_mark_best_path( node_t * node, path_t * m ) {
-	path_t * p = node->paths;
-	for( p = node->paths ; p->node ; p++ )
-		p->best = (p == m);
-}
-
-void nodes_list( node_t ** nodes ) {
-	node_t * n;
-	while( (n = *nodes) ) {
-		printf("* %s [%d] %s\n", n->name, n->distance, n->visited ? "visited" : "-" );
-		path_t *p;
-		for( p = n->paths; p->node; p++ )
-			printf("  --(%d)--> %s %s\n", p->distance, p->node->name, p->best ? "[BEST]" : "" );
-		nodes++;
+	/* aloca as linhas da matriz */
+	ant = calloc (vertices, sizeof(int *));
+	tmp = calloc (vertices, sizeof(int *));
+	if (ant == NULL) {
+		printf ("** Erro: Memoria Insuficiente **");
+		exit(-1);
 	}
-}
 
-int dijkstra_node_distance( node_t * node ) {
-	path_t * p;
+	z = calloc (vertices, sizeof(int *));
+	if (z == NULL) {
+		printf ("** Erro: Memoria Insuficiente **");
+		exit(-1);
+	}
 
-	if ( ! node->visited ) {
-		printf("dijkstra_node_distance( %s )...\n", node->name );
-		node->visited = true;
-		for( p = node->paths; p->node; p++) {
-			int d = dijkstra_node_distance( p->node ) + p->distance ;
-			if ( d < node->distance ) {
-				node->distance = d;
-				node_mark_best_path( node, p );
-			}
+	for (i = 0; i < vertices; i++) {
+		if (custos[(origem - 1) * vertices + i] !=- 1) {
+			ant[i] = origem - 1;
+			dist[i] = custos[(origem-1)*vertices+i];
 		}
-		printf("dijkstra_node_distance( %s ): %d\n", node->name, node->distance );
-	}
-
-	return node->distance;
-}
-
-void dijskstra_nodes( node_t ** nodes ) {
-	node_t * n;
-	while( (n = *nodes) ) {
-		dijkstra_node_distance( n );
-		nodes++;
-	}
-}
-
-void dijkstra_solution( node_t * node ) {
-	printf("%s[%d]", node->name, node->distance );
-
-	path_t * p;
-	for( p = node->paths; p->node; p++ ) {
-		if ( p->best ) {
-			printf(" --(%d)--> ", p->distance );
-			dijkstra_solution( p->node );
-			break;
+		else {
+			ant[i]= -1;
+			dist[i] = HUGE_VAL;
 		}
+		z[i]=0;
+	}
+	z[origem-1] = 1;
+	dist[origem-1] = 0;
+
+	/* Laco principal */
+	do {
+
+		/* Encontrando o vertice que deve entrar em z */
+		min = HUGE_VAL;
+		for (i=0;i<vertices;i++)
+			if (!z[i])
+				if (dist[i]>=0 && dist[i]<min) {
+					min=dist[i];v=i;
+				}
+
+		/* Calculando as distancias dos novos vizinhos de z */
+		if (min != HUGE_VAL && v != destino - 1) {
+			z[v] = 1;
+			for (i = 0; i < vertices; i++)
+				if (!z[i]) {
+					if (custos[v*vertices+i] != -1 && dist[v] + custos[v*vertices+i] < dist[i]) {
+					   	dist[i] = dist[v] + custos[v*vertices+i];
+						ant[i] =v;
+				   	}
+        		}
+		}
+	} while (v != destino - 1 && min != HUGE_VAL);
+
+	/* Mostra o Resultado da busca */
+	printf("\tDe %c para %c: \t", origem+64, destino+64);
+	if (min == HUGE_VAL) {
+		printf("Nao Existe\n");
+		printf("\tCusto: \t- \n");
+	}
+	else {
+		i = destino;
+		i = ant[i-1];
+		while (i != -1) {
+		//	printf("<-%d",i+1);
+			tmp[cont] = i+1;
+			cont++;
+			i = ant[i];
+		}
+		
+		for (i = cont; i > 0 ; i--) {
+			printf("%c -> ", tmp[i-1]+64);
+		}
+		printf("%c", destino+64);
+		
+		printf("\n\tCusto:  %d\n",(int) dist[destino-1]);
 	}
 }
 
-int main() {
+void limpar(void)
+{
+     printf("\033[2J"); /* limpa a tela */
+     printf("\033[1H"); /* poe o curso no topo */
+}
 
-	node_t
-	a = {distance:  0, name: "a"},
-	b = {distance: INFINITY, name: "b"},
-	c = {distance: INFINITY, name: "c"},
-	d = {distance: INFINITY, name: "d"},
-	e = {distance: INFINITY, name: "e"},
-	f = {distance: INFINITY, name: "f"},
-	g = {distance: INFINITY, name: "g"},
-	h = {distance: INFINITY, name: "h"},
-	i = {distance: INFINITY, name: "i"};
+void cabecalho(void)
+{
+ 	//limpar();
+	printf("Implementacao do Algoritmo de Dijasktra\n");
+	printf("Comandos:\n");
+	printf("\t d - Adicionar um Grafo\n"
+	  	   "\t r - Procura Os Menores Caminhos no Grafo\n"
+	  	   "\t CTRL+c - Sair do programa\n");
+	printf(">>> ");
+}
 
-	add_path( & a, & b, 7 );
-	add_path( & a, & c, 4 );
-	add_path( & a, & d, 5 );
-	add_path( & b, & c, 2 );
-	add_path( & b, & e, 25 );
-	add_path( & e, & g, 10 );
-	add_path( & g, & i, 2 );
-	add_path( & c, & h, 9 );
-	add_path( & h, & i, 3 );
-	add_path( & d, & f, 9 );
-	add_path( & f, & h, 20 );
+void add(void)
+{
+	int i, j;
+	
+	do {
+		printf("\n-> Lendo numero de vertices...");
+		fscanf(f,"%d",&vertices);
+	} while (vertices < 2 );
 
-	node_t * nodes [] = { & a, & b, & c, &d, & e, & f, & g, & h, & i, NULL };
+	if (!custos)
+		free(custos);
+	custos = (int *) malloc(sizeof(int)*vertices*vertices);
+	for (i = 0; i <= vertices * vertices; i++)
+		custos[i] = -1;
 
-	node_t * target;
+	int numeroArestas;
 
-	target = &i;
+	fscanf(f,"%d",&numeroArestas);
+	printf("\n-> Lendo numero de arestas...");
 
-	dijkstra_node_distance( target );
+	for(i = 0; i < numeroArestas; i++){
+		fscanf(f, "%d %d %d", &origem, &destino, &custo);
+		printf("\n%c -> %c [%d]", origem+64, destino+64, custo);
+		custos[(origem-1) * vertices + destino - 1] = custo;
+	}
+}
 
-		nodes_list( nodes );
+void procurar(void)
+{
+	int i, j;
+ 
+	/* Azul */
+	printf("\033[36;1m");
+	printf("\n\nLista dos Menores Caminhos no Grafo Dado: \n");
+		 	
+	
+	//quero ir do 1 até o 8  (A -> H)
+	i = 1;
+	j = 8;
 
-		printf("Solution for %s: ", target->name);
-		dijkstra_solution( target );
-		printf("\n");
+	dijkstra(vertices, i,j, custos);
 
+	/* Volta cor nornal */
+	printf("\033[m");
+}
+
+int main(int argc, char **argv) {
+	int i, j; 
+	char opcao[3], l[50]; 
+
+	f = (FILE *)fopen("grafo.txt","r");
+
+
+	//Cria grafo
+	add();
+
+	//Procura menor caminho
+	procurar();
 
 
 	return 0;
