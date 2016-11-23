@@ -1,9 +1,3 @@
-/*   
-* Este programa implementa o algoritmo de Dijkstra para o problema do 
-* caminho de custo minimo em grafos dirigidos com custos positivos nas
-* arestas.
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -16,7 +10,6 @@ FILE *f;
 
 void dijkstra(int vertices,int origem,int destino,int *custos)
 {
-	//printf("chamou o dijkstra!!!\n");
 	int i,v, cont = 0;
 	int *ant, *tmp;  
 	int *z;     /* vertices para os quais se conhece o caminho minimo */
