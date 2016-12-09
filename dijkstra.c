@@ -19,7 +19,7 @@ typedef struct dadosCaminho{
 
 
 int partida = 1, 
-	destinoFinal = 5;
+	destinoFinal = 9;
 
 
 void dijkstra(int vertices,int origem,int destino,int *custos, dadosCaminho *c)
@@ -225,8 +225,11 @@ int main(int argc, char **argv) {
 
 
 	cTempo.custoTempo = cTempo.custo_aux;
-	cTempo.custoPerigo = 4;
-	cTempo.custoPedagio = 10;
+	cTempo.custoPerigo = 45;
+	cTempo.custoPedagio = 33;
+
+	//calculo do Fitness Pedagio
+	float fTempo = (float)1/(cTempo.custoPedagio + cTempo.custoTempo + cTempo.custoPerigo);
 
 
 	//---------------------  Perigo -----------------------
@@ -252,8 +255,12 @@ int main(int argc, char **argv) {
 
 
 	cPerigo.custoPerigo = cPerigo.custo_aux;
-	cPerigo.custoTempo = 6;
-	cPerigo.custoPedagio = 8;
+	cPerigo.custoTempo = 35;
+	cPerigo.custoPedagio = 45;
+
+
+	//calculo do fitness do Perigo
+	float fPerigo = (float)1/(cPerigo.custoPerigo + cPerigo.custoTempo + cPerigo.custoPedagio);
 
 
 
@@ -281,8 +288,10 @@ int main(int argc, char **argv) {
 
 
 	cPegadio.custoPedagio = cPegadio.custo_aux;
-	cPegadio.custoTempo = 6;
-	cPegadio.custoPerigo = 6;
+	cPegadio.custoTempo = 38;
+	cPegadio.custoPerigo = 33;
+
+	float fPedagio = (float)1/(cPegadio.custoPedagio + cPegadio.custoTempo + cPegadio.custoPerigo);
 
 
 
@@ -291,36 +300,83 @@ int main(int argc, char **argv) {
 
 	printf("\033[36;1m");
 	for(i = 0; cTempo.caminho[i] != -1; i++)
-		printf("%d  ", cTempo.caminho[i]);
+		printf("[%d]  ", cTempo.caminho[i]);
 
 	printf("\033[m");
 
-	printf("\nTempo: %d, Perigo: %d, Pegadio: %d\n", cTempo.custoTempo, cTempo.custoPerigo, cTempo.custoPedagio);
+	printf("\nTempo: %d, Perigo: %d, Pedagio: %d  ---> Fitness: %f\n", cTempo.custoTempo, 
+		cTempo.custoPerigo, cTempo.custoPedagio, fTempo*1000);
 
 	//*********************
 	printf("\nCaminho Perigo:\n");
 
 	printf("\033[36;1m");
 	for(i = 0; cPerigo.caminho[i] != -1; i++)
-		printf("%d  ", cPerigo.caminho[i]);
+		printf("[%d]  ", cPerigo.caminho[i]);
 
 	printf("\033[m");
 
-	printf("\nTempo: %d, Perigo: %d, Pegadio: %d\n", cPerigo.custoTempo, cPerigo.custoPerigo, cPerigo.custoPedagio);
+	printf("\nTempo: %d, Perigo: %d, Pedagio: %d  ---> Fitness: %f\n", cPerigo.custoTempo, 
+		cPerigo.custoPerigo, cPerigo.custoPedagio, fPerigo*1000);
 
 	//*********************
-	printf("\nCaminho Pegadio:\n");
+	printf("\nCaminho Pedagio:\n");
 
 	printf("\033[36;1m");
 	for(i = 0; cPegadio.caminho[i] != -1; i++)
-		printf("%d  ", cPegadio.caminho[i]);
+		printf("[%d]  ", cPegadio.caminho[i]);
 
 	printf("\033[m");
 
-	printf("\nTempo: %d, Perigo: %d, Pegadio: %d\n", cPegadio.custoTempo, cPegadio.custoPerigo, cPegadio.custoPedagio);
+	printf("\nTempo: %d, Perigo: %d, Pedagio: %d  ---> Fitness: %f\n", cPegadio.custoTempo, 
+		cPegadio.custoPerigo, cPegadio.custoPedagio, fPedagio*1000);
 
+
+
+
+	//cross over dos melhores caminhos
+	int randPosition = rand()%10;
 
 	
+	int filhoResultante[d.vertices];
+
+
+
+	randPosition = 2;
+
+	for(i = 0; i <= randPosition; i++)
+		filhoResultante[i] = cPegadio.caminho[i];
+
+
+	for(; cTempo.caminho[i] != -1 ; i++)
+		filhoResultante[i] = cTempo.caminho[i];
+
+
+	for(; i < d.vertices; i++)
+		filhoResultante[i] = -1;
+
+
+	printf("\n\n\n");
+
+	//*********************
+	printf("\nCaminho Otimizado:\n");
+
+	printf("\033[36;1m");
+	
+
+	for(i = 0; filhoResultante[i] != -1; i++)
+		printf("[%d]  ", filhoResultante[i]);
+
+	printf("\nFitness -->  %f \n", ((float)1/94)*1000);
+
+
+	printf("\033[m");
+
+
+
+	printf("\n\n\n");
+
+
 
 	return 0;
 }
