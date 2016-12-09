@@ -4,11 +4,25 @@
 #include <string.h>
 
 
-int destino, origem, vertices = 0;
-int custo, *custos = NULL; 
-FILE *f;
+typedef struct dados{
+	int destino, origem, vertices;
+	int custo, *custos;
+}dados;
 
-void dijkstra(int vertices,int origem,int destino,int *custos)
+typedef struct dadosCaminho{
+	int *caminho;
+	int custoTempo;
+	int custoPerigo;
+	int custoPedagio;
+	int custo_aux;
+}dadosCaminho;
+
+
+int partida = 1, 
+	destinoFinal = 5;
+
+
+void dijkstra(int vertices,int origem,int destino,int *custos, dadosCaminho *c)
 {
 	int i,v, cont = 0;
 	int *ant, *tmp;  
@@ -70,7 +84,7 @@ void dijkstra(int vertices,int origem,int destino,int *custos)
 	} while (v != destino - 1 && min != HUGE_VAL);
 
 	/* Mostra o Resultado da busca */
-	printf("\tDe %c para %c: \t", origem+64, destino+64);
+	//printf("\tDe %c para %c: \t", origem+64, destino+64);
 	if (min == HUGE_VAL) {
 		printf("Nao Existe\n");
 		printf("\tCusto: \t- \n");
@@ -84,13 +98,23 @@ void dijkstra(int vertices,int origem,int destino,int *custos)
 			cont++;
 			i = ant[i];
 		}
+
+		int count = 0;
 		
 		for (i = cont; i > 0 ; i--) {
-			printf("%c -> ", tmp[i-1]+64);
+			//printf("%c -> ", tmp[i-1]+64);
+			c->caminho[count++] = tmp[i-1];
 		}
-		printf("%c", destino+64);
+		//printf("%c", destino+64);
+
+		c->caminho[count++] = destino;
+
+		for(i = count; i < vertices; i++)
+			c->caminho[i] = -1;
 		
-		printf("\n\tCusto:  %d\n",(int) dist[destino-1]);
+		//printf("\n\tCusto:  %d\n",(int) dist[destino-1]);
+
+		c->custo_aux = (int) dist[destino-1];
 	}
 }
 
@@ -111,65 +135,192 @@ void cabecalho(void)
 	printf(">>> ");
 }
 
-void add(void)
+void add(dados *d, FILE *f)
 {
 	int i, j;
 	
 	do {
-		printf("\n-> Lendo numero de vertices...");
-		fscanf(f,"%d",&vertices);
-	} while (vertices < 2 );
+		//printf("\n-> Lendo numero de vertices...");
+		fscanf(f,"%d",&(d->vertices));
+	} while (d->vertices < 2 );
 
-	if (!custos)
-		free(custos);
-	custos = (int *) malloc(sizeof(int)*vertices*vertices);
-	for (i = 0; i <= vertices * vertices; i++)
-		custos[i] = -1;
+
+	if (!d->custos)
+		free(d->custos);
+	d->custos = (int *) malloc(sizeof(int)*d->vertices*d->vertices);
+	for (i = 0; i <= d->vertices * d->vertices; i++)
+		(d->custos)[i] = -1;
 
 	int numeroArestas;
 
 	fscanf(f,"%d",&numeroArestas);
-	printf("\n-> Lendo numero de arestas...");
+	//printf("\n-> Lendo numero de arestas...");
 
 	for(i = 0; i < numeroArestas; i++){
-		fscanf(f, "%d %d %d", &origem, &destino, &custo);
-		printf("\n%c -> %c [%d]", origem+64, destino+64, custo);
-		custos[(origem-1) * vertices + destino - 1] = custo;
+		fscanf(f, "%d %d %d", &(d->origem), &(d->destino), &(d->custo));
+		//printf("\n%c -> %c [%d]", (d->origem)+64, (d->destino)+64, d->custo);
+		(d->custos)[(d->origem-1) * d->vertices + d->destino - 1] = d->custo;
 	}
 }
 
-void procurar(void)
+void procurar(dados *d,  dadosCaminho *c)
 {
-	int i, j;
  
 	/* Azul */
-	printf("\033[36;1m");
-	printf("\n\nLista dos Menores Caminhos no Grafo Dado: \n");
+	//printf("\033[36;1m");
+	//printf("\n\nLista dos Menores Caminhos no Grafo Dado: \n");
 		 	
-	
-	//quero ir do 1 até o 8  (A -> H)
-	i = 1;
-	j = 8;
 
-	dijkstra(vertices, i,j, custos);
+	dijkstra(d->vertices, partida, destinoFinal, d->custos, c);
 
 	/* Volta cor nornal */
-	printf("\033[m");
+	//printf("\033[m");
 }
 
 int main(int argc, char **argv) {
-	int i, j; 
-	char opcao[3], l[50]; 
+	/*
+	typedef struct dados{
+		int destino, origem, vertices;
+		int custo, *custos;
+		FILE *f;
+	}dados;
+	*/
 
-	f = (FILE *)fopen("grafo.txt","r");
+	/*
+	typedef struc c{
+		int *caminho;
+		int custoTempo;
+		int custoPerigo;
+		int custoPedagio;
+	}
+	*/
+
+	int i;
+
+	FILE *f;
+
+	dados d;
+	d.destino = 0;
+	d.origem = 0;
+	d.vertices = 0;
+	d.custo = 0;
+	d.custos = NULL;
+
+	//---------------------  TEMPO -----------------------
+
+	f = (FILE *)fopen("tempo.txt","r");
 
 
 	//Cria grafo
-	add();
+	add(&d, f);
 
-	//Procura menor caminho
-	procurar();
+	dadosCaminho cTempo;		//armazena os dados do menor caminho para tempo
 
+	cTempo.caminho = (int *)malloc(d.vertices*sizeof(int));	//salvar caminho aqui
+
+	//Procura o caminho com o menor tempo
+	procurar(&d, &cTempo);
+
+	//Agora calculo o Perigo e Pedagio para esse caminho(que tem o menor tempo)
+
+
+	cTempo.custoTempo = cTempo.custo_aux;
+	cTempo.custoPerigo = 4;
+	cTempo.custoPedagio = 10;
+
+
+	//---------------------  Perigo -----------------------
+	d.destino = 0;
+	d.origem = 0;
+	d.vertices = 0;
+	d.custo = 0;
+	d.custos = NULL;
+
+	f = (FILE *)fopen("perigo.txt","r");
+
+	//Cria grafo
+	add(&d, f);
+
+	dadosCaminho cPerigo;	
+
+	cPerigo.caminho = (int *)malloc(d.vertices*sizeof(int));	//salvar caminho aqui
+
+	//Procura o caminho com o menor tempo
+	procurar(&d, &cPerigo);
+
+	//Agora calculo o Perigo e Pedagio para esse caminho(que tem o menor tempo)
+
+
+	cPerigo.custoPerigo = cPerigo.custo_aux;
+	cPerigo.custoTempo = 6;
+	cPerigo.custoPedagio = 8;
+
+
+
+	//---------------------  Pedagio -----------------------
+
+	d.destino = 0;
+	d.origem = 0;
+	d.vertices = 0;
+	d.custo = 0;
+	d.custos = NULL;
+
+	f = (FILE *)fopen("pedagio.txt","r");
+
+	//Cria grafo
+	add(&d, f);
+
+	dadosCaminho cPegadio;	
+
+	cPegadio.caminho = (int *)malloc(d.vertices*sizeof(int));	//salvar caminho aqui
+
+	//Procura o caminho com o menor tempo
+	procurar(&d, &cPegadio);
+
+	//Agora calculo o Perigo e Pedagio para esse caminho(que tem o menor tempo)
+
+
+	cPegadio.custoPedagio = cPegadio.custo_aux;
+	cPegadio.custoTempo = 6;
+	cPegadio.custoPerigo = 6;
+
+
+
+	//*********************
+	printf("\nCaminho Tempo:\n");
+
+	printf("\033[36;1m");
+	for(i = 0; cTempo.caminho[i] != -1; i++)
+		printf("%d  ", cTempo.caminho[i]);
+
+	printf("\033[m");
+
+	printf("\nTempo: %d, Perigo: %d, Pegadio: %d\n", cTempo.custoTempo, cTempo.custoPerigo, cTempo.custoPedagio);
+
+	//*********************
+	printf("\nCaminho Perigo:\n");
+
+	printf("\033[36;1m");
+	for(i = 0; cPerigo.caminho[i] != -1; i++)
+		printf("%d  ", cPerigo.caminho[i]);
+
+	printf("\033[m");
+
+	printf("\nTempo: %d, Perigo: %d, Pegadio: %d\n", cPerigo.custoTempo, cPerigo.custoPerigo, cPerigo.custoPedagio);
+
+	//*********************
+	printf("\nCaminho Pegadio:\n");
+
+	printf("\033[36;1m");
+	for(i = 0; cPegadio.caminho[i] != -1; i++)
+		printf("%d  ", cPegadio.caminho[i]);
+
+	printf("\033[m");
+
+	printf("\nTempo: %d, Perigo: %d, Pegadio: %d\n", cPegadio.custoTempo, cPegadio.custoPerigo, cPegadio.custoPedagio);
+
+
+	
 
 	return 0;
 }
